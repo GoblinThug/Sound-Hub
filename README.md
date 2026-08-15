@@ -45,10 +45,15 @@
 
 ## ⬇️ Установка (Load unpacked)
 
-1. Склонируйте репозиторий или скачайте ZIP с GitHub.
-2. Откройте `chrome://extensions`
-3. Включите **Режим разработчика**
-4. **Загрузить распакованное расширение** → выберите корень проекта (папка с `manifest.json`)
+**Готовый архив:** [Releases](https://github.com/GoblinThug/SoundHub/releases/latest) → скачайте `SoundHub-….zip`, распакуйте.
+
+Или склонируйте репозиторий / ZIP с кнопки Code.
+
+1. Откройте `chrome://extensions`
+2. Включите **Режим разработчика**
+3. **Загрузить распакованное расширение** → папка с `manifest.json` (внутри архива — `SoundHub/`)
+
+> При пуше в `main` (или тега `v*`) GitHub Actions собирает ZIP и публикует Release. Версия берётся из `manifest.json`.
 
 > Работает в Chromium-браузерах с поддержкой MV3 и `tabCapture` (Chrome, Edge и аналоги). Страницы `chrome://` захватить нельзя — ограничение браузера.
 
@@ -126,10 +131,15 @@ Current version: **`1.0.0`** (`manifest.json`).
 
 ## ⬇️ Install (Load unpacked)
 
-1. Clone the repo or download the ZIP from GitHub.
-2. Open `chrome://extensions`
-3. Enable **Developer mode**
-4. **Load unpacked** → select the project root (folder with `manifest.json`)
+**Ready ZIP:** [Releases](https://github.com/GoblinThug/SoundHub/releases/latest) → download `SoundHub-….zip` and extract.
+
+Or clone the repo / use Code → Download ZIP.
+
+1. Open `chrome://extensions`
+2. Enable **Developer mode**
+3. **Load unpacked** → folder with `manifest.json` (inside the archive: `SoundHub/`)
+
+> A push to `main` (or a `v*` tag) runs GitHub Actions: packs a ZIP and publishes a Release. Version comes from `manifest.json`.
 
 > Works in Chromium browsers with MV3 and `tabCapture` (Chrome, Edge, and similar). `chrome://` pages cannot be captured — a browser limitation.
 

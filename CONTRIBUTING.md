@@ -46,6 +46,12 @@ cd SoundHub
 | `docs/` | Доп. README (EN / RU) |
 | `.github/` | Issues / security / шаблоны |
 
+## Релизы
+
+Версия живёт в `manifest.json`. После мержа в `main` workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) собирает `SoundHub-X.Y.Z.zip` и публикует [GitHub Release](https://github.com/GoblinThug/SoundHub/releases) с тегом `vX.Y.Z`.
+
+Чтобы выпустить новую версию: поднимите `"version"` в манифесте → push в `main` (или запушьте тег `vX.Y.Z`).
+
 ## Что желательно соблюдать
 
 - Не коммитьте секреты, `.env`, личные пресеты с чувствительными данными.
@@ -105,6 +111,12 @@ To debug the audio engine: DevTools on the offscreen document (via the service w
 | `assets/icons/` | Extension icons |
 | `docs/` | Extra READMEs (EN / RU) |
 | `.github/` | Issues / security / templates |
+
+## Releases
+
+Version lives in `manifest.json`. After a merge to `main`, [`.github/workflows/release.yml`](.github/workflows/release.yml) packs `SoundHub-X.Y.Z.zip` and publishes a [GitHub Release](https://github.com/GoblinThug/SoundHub/releases) tagged `vX.Y.Z`.
+
+To ship a new version: bump `"version"` in the manifest → push to `main` (or push tag `vX.Y.Z`).
 
 ## Guidelines
 

@@ -1,0 +1,111 @@
+name: Release
+
+# Push to main → ZIP from manifest.json version → GitHub Release (tag vX.Y.Z)
+# Tag v* or Actions → Run workflow also work.
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="$(python3 -c "import json; print(json.load(open('manifest.json'))['version'])")"
+          fi
+          TAG="v${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version ${VERSION} (tag ${TAG})"
+
+      - name: Pack extension ZIP
+        id: pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.meta.outputs.version }}"
+          OUT="SoundHub-${VERSION}.zip"
+          STAGE="dist/SoundHub"
+          rm -rf dist
+          mkdir -p "${STAGE}"
+
+          for path in \
+            manifest.json \
+            background \
+            offscreen \
+            audio \
+            shared \
+            popup \
+            assets \
+            LICENSE \
+            LICENSE.ru \
+            README.md \
+            docs
+          do
+            if [[ -e "${path}" ]]; then
+              cp -a "${path}" "${STAGE}/"
+            fi
+          done
+
+          (cd dist && zip -r "../${OUT}" SoundHub)
+          echo "zip=${OUT}" >> "$GITHUB_OUTPUT"
+          ls -lh "${OUT}"
+
+      - name: Upload Actions artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SoundHub-${{ steps.meta.outputs.version }}
+          path: SoundHub-${{ steps.meta.outputs.version }}.zip
+          if-no-files-found: error
+
+      - name: Ensure tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.meta.outputs.tag }}"
+          VERSION="${{ steps.meta.outputs.version }}"
+          ZIP="SoundHub-${VERSION}.zip"
+
+          if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists"
+          else
+            git tag "${TAG}" "${GITHUB_SHA}"
+            git push origin "refs/tags/${TAG}"
+            echo "Created tag ${TAG} → ${GITHUB_SHA}"
+          fi
+
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists — uploading/replacing asset"
+            gh release upload "${TAG}" "${ZIP}" --clobber
+          else
+            gh release create "${TAG}" "${ZIP}" \
+              --title "SoundHub ${VERSION}" \
+              --generate-notes \
+              --latest
+            echo "Created release ${TAG}"
+          fi
