@@ -8,7 +8,16 @@ const DOMAIN_FILTER_KEY = SoundHubDomainFilter.STORAGE_KEY;
 const STOPPED_HOSTS_KEY = 'USER_STOPPED_HOSTS';
 /** tabId → hostname where the user manually stopped EQ */
 const userStoppedHosts = new Map();
+/** tabId → tab snapshot for in-page (element) EQ */
+const pageEqByTab = new Map();
 const autoEqInFlight = new Set();
+const EQ_FORWARD_TYPES = new Set([
+  'modifyFilter',
+  'modifyGain',
+  'resetFilters',
+  'resetFilter',
+]);
+const EQ_SNAPSHOT_TYPES = new Set(['preset', 'resetFilters', 'importPresets']);
 let stoppedHostsLoaded = false;
 let creatingOffscreen = null;
 let creatingHostWindow = null;
@@ -371,6 +380,163 @@ function getMediaStreamIdForTab(tabId) {
   });
 }
 
+function runtimeSend(message) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage(message, (response) => {
+      void chrome.runtime.lastError;
+      resolve(response);
+    });
+  });
+}
+
+function getEqSnapshot() {
+  const attempt = (left) =>
+    runtimeSend({ type: 'getEqSnapshot' }).then((res) => {
+      if (res && res.ok) {
+        return { filters: res.filters || [], gain: res.gain != null ? res.gain : 1 };
+      }
+      if (left <= 0) return { filters: [], gain: 1 };
+      return wait(100).then(() => attempt(left - 1));
+    });
+  return attempt(8);
+}
+
+function injectPageEq(tabId) {
+  if (!chrome.scripting || !chrome.scripting.executeScript) {
+    return Promise.resolve(false);
+  }
+  return chrome.scripting
+    .executeScript({
+      target: { tabId, allFrames: true },
+      files: ['content/page-eq.js'],
+    })
+    .then(() => true)
+    .catch((err) => {
+      console.warn('SoundHub: page EQ inject failed', err);
+      return false;
+    });
+}
+
+function startPageEqInTab(tabId, snapshot) {
+  if (!chrome.scripting || !chrome.scripting.executeScript) {
+    return Promise.resolve({ ok: false, reason: 'no_scripting' });
+  }
+  return chrome.scripting
+    .executeScript({
+      target: { tabId, allFrames: true },
+      world: 'ISOLATED',
+      func: async (state) => {
+        const api = globalThis.__soundhubPageEq;
+        if (!api || typeof api.start !== 'function') {
+          return { ok: false, reason: 'not_injected' };
+        }
+        try {
+          return await api.start(state);
+        } catch (err) {
+          return { ok: false, reason: String(err && err.message ? err.message : err) };
+        }
+      },
+      args: [snapshot || { filters: [], gain: 1 }],
+    })
+    .then((results) => {
+      if (!results || !results.length) {
+        return { ok: false, reason: 'no_frames' };
+      }
+      for (const entry of results) {
+        const result = entry && entry.result;
+        if (result && result.ok) return result;
+      }
+      const last = results[results.length - 1];
+      return (last && last.result) || { ok: false, reason: 'no_media' };
+    })
+    .catch((err) => {
+      console.warn('SoundHub: page EQ start failed', err);
+      return { ok: false, reason: 'inject_error' };
+    });
+}
+
+function stopPageEqInTab(tabId) {
+  if (!chrome.scripting || !chrome.scripting.executeScript) {
+    pageEqByTab.delete(tabId);
+    return Promise.resolve();
+  }
+  return chrome.scripting
+    .executeScript({
+      target: { tabId, allFrames: true },
+      world: 'ISOLATED',
+      func: () => {
+        const api = globalThis.__soundhubPageEq;
+        if (api && typeof api.stop === 'function') return api.stop();
+        return { ok: true };
+      },
+    })
+    .catch(() => null)
+    .finally(() => {
+      pageEqByTab.delete(tabId);
+    });
+}
+
+function forwardToPageEqTabs(message) {
+  if (!pageEqByTab.size) return;
+  for (const tabId of pageEqByTab.keys()) {
+    chrome.tabs.sendMessage(tabId, message, () => {
+      void chrome.runtime.lastError;
+    });
+  }
+}
+
+function pushSnapshotToPageEqTabs() {
+  if (!pageEqByTab.size) return;
+  getEqSnapshot().then((snap) => {
+    forwardToPageEqTabs({
+      type: 'pageEq.applySnapshot',
+      filters: snap.filters,
+      gain: snap.gain,
+    });
+  });
+}
+
+function notifyPageEqStatus(tab, streaming) {
+  const payload = {
+    type: 'sendCurrentTabStatus',
+    streaming: !!streaming,
+    path: streaming ? 'element' : null,
+  };
+  if (tab && tab.url && typeof SoundHubDomainFilter !== 'undefined') {
+    SoundHubDomainFilter.getFilter((filter) => {
+      payload.domainAllowed = SoundHubDomainFilter.isAllowedForUrl(tab.url, filter);
+      payload.hostname = SoundHubDomainFilter.hostnameFromUrl(tab.url);
+      chrome.runtime.sendMessage(payload, () => {
+        void chrome.runtime.lastError;
+      });
+    });
+  } else {
+    chrome.runtime.sendMessage(payload, () => {
+      void chrome.runtime.lastError;
+    });
+  }
+}
+
+function getPageEqStreams() {
+  return Array.from(pageEqByTab.values());
+}
+
+async function tryStartPageEq(tab) {
+  if (!tab || typeof tab.id !== 'number') return false;
+  if (!isBrowsableUrl(tab.url)) return false;
+
+  const injected = await injectPageEq(tab.id);
+  if (!injected) return false;
+
+  const snapshot = await getEqSnapshot();
+  const result = await startPageEqInTab(tab.id, snapshot);
+  if (!result || !result.ok) return false;
+
+  pageEqByTab.set(tab.id, tabSnapshot(tab));
+  notifyPageEqStatus(tab, true);
+  return true;
+}
+
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -396,6 +562,7 @@ async function startEqForTab(tab) {
   if (!isBrowsableUrl(tab.url)) return;
   if (isStoppedOnCurrentDomain(tab)) return;
   if (autoEqInFlight.has(tab.id)) return;
+  if (pageEqByTab.has(tab.id)) return;
 
   const filter = await getFilterConfig();
   if (!SoundHubDomainFilter.shouldAutoEnable(tab.url, filter)) return;
@@ -414,6 +581,11 @@ async function startEqForTab(tab) {
     if (!isBrowsableUrl(freshTab.url)) return;
     if (isStoppedOnCurrentDomain(freshTab)) return;
     if (!SoundHubDomainFilter.shouldAutoEnable(freshTab.url, filter)) return;
+    if (pageEqByTab.has(freshTab.id)) return;
+
+    // Prefer in-page element EQ so video fullscreen keeps working.
+    const pageOk = await tryStartPageEq(freshTab);
+    if (pageOk) return;
 
     const streamId = await getMediaStreamIdForTab(freshTab.id);
     if (!streamId) {
@@ -464,6 +636,12 @@ function syncEqWithDomainFilter(filter) {
   const cfg = SoundHubDomainFilter.sanitizeFilter(filter);
   userStoppedHosts.clear();
   persistStoppedHosts();
+  // Drop page-EQ tabs that no longer match autostart rules.
+  for (const [tabId, tab] of pageEqByTab.entries()) {
+    if (!SoundHubDomainFilter.shouldAutoEnable(tab && tab.url, cfg)) {
+      stopPageEqInTab(tabId);
+    }
+  }
   ensureAudioHost().then(async (ok) => {
     if (!ok) return;
     // Offscreen may need a brief moment after wake/create.
@@ -480,8 +658,99 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || typeof message !== 'object') {
     return;
   }
+
+  if (EQ_FORWARD_TYPES.has(message.type)) {
+    forwardToPageEqTabs(message);
+  }
+  if (EQ_SNAPSHOT_TYPES.has(message.type)) {
+    setTimeout(pushSnapshotToPageEqTabs, 150);
+  }
+
+  if (message.type === 'getPageEqStreams') {
+    sendResponse({ streams: getPageEqStreams() });
+    return true;
+  }
+
+  if (message.type === 'getPageEqActive') {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tab = tabs && tabs[0];
+      const active = !!(tab && pageEqByTab.has(tab.id));
+      sendResponse({ active, path: active ? 'element' : null });
+    });
+    return true;
+  }
+
+  if (message.type === 'getEqFFT') {
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      const tab = tabs && tabs[0];
+      if (tab && pageEqByTab.has(tab.id) && chrome.scripting) {
+        try {
+          const results = await chrome.scripting.executeScript({
+            target: { tabId: tab.id, allFrames: true },
+            world: 'ISOLATED',
+            func: () => {
+              const api = globalThis.__soundhubPageEq;
+              if (!api || !api.isActive || !api.isActive()) return null;
+              return api.getFft();
+            },
+          });
+          const fft = (results || []).map((r) => r && r.result).find((v) => Array.isArray(v));
+          sendResponse({ type: 'fft', fft: fft || null });
+        } catch (_) {
+          sendResponse({ type: 'fft', fft: null });
+        }
+        return;
+      }
+      chrome.runtime.sendMessage({ type: 'getFFT' }, (res) => {
+        void chrome.runtime.lastError;
+        sendResponse(res || { type: 'fft', fft: null });
+      });
+    });
+    return true;
+  }
+
+  if (message.type === 'startPageEq') {
+    const tabId = message.tabId;
+    getTab(tabId).then(async (tab) => {
+      if (!tab) {
+        sendResponse({ ok: false });
+        return;
+      }
+      if (message.reason === 'user') {
+        clearUserStoppedTab(tab.id);
+      }
+      await ensureAudioHost();
+      const ok = await tryStartPageEq(tab);
+      sendResponse({ ok: !!ok, path: ok ? 'element' : null });
+    });
+    return true;
+  }
+
+  if (message.type === 'stopPageEq') {
+    const tabId = message.tabId;
+    if (typeof tabId === 'number' && pageEqByTab.has(tabId)) {
+      const tab = pageEqByTab.get(tabId);
+      stopPageEqInTab(tabId).then(() => {
+        notifyPageEqStatus(tab, false);
+        sendResponse({ ok: true });
+      });
+      return true;
+    }
+    sendResponse({ ok: true });
+    return true;
+  }
+
   if (message.type === 'eqTab') {
     if (message.on === false) {
+      if (typeof message.tabId === 'number' && pageEqByTab.has(message.tabId)) {
+        stopPageEqInTab(message.tabId);
+      } else if (typeof message.tabId !== 'number') {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs && tabs[0] && pageEqByTab.has(tabs[0].id)) {
+            stopPageEqInTab(tabs[0].id);
+          }
+        });
+      }
       if (message.reason !== 'filter') {
         if (typeof message.tabId === 'number') {
           markUserStoppedTab(message.tabId, message.tabUrl);
@@ -506,6 +775,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   }
   if (message.type === 'disconnectTab' && message.tab && typeof message.tab.id === 'number') {
+    if (pageEqByTab.has(message.tab.id)) {
+      stopPageEqInTab(message.tab.id);
+    }
     if (message.reason !== 'filter') {
       markUserStoppedTab(message.tab.id, message.tab.url);
     }
@@ -558,6 +830,7 @@ if (chrome.tabs && chrome.tabs.onRemoved) {
       hostTabId = null;
     }
     userStoppedHosts.delete(tabId);
+    pageEqByTab.delete(tabId);
     autoEqInFlight.delete(tabId);
     clearTimeout(autoEqTimers.get(tabId));
     autoEqTimers.delete(tabId);
@@ -568,6 +841,9 @@ if (chrome.tabs && chrome.tabs.onUpdated) {
   chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
     if (changeInfo.url) {
       clearStopIfDomainChanged(tabId, changeInfo.url);
+      if (pageEqByTab.has(tabId)) {
+        stopPageEqInTab(tabId);
+      }
       scheduleAutoEnableEq(tabId, 250);
       return;
     }

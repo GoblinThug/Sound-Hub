@@ -246,7 +246,7 @@
       vizTimer = setTimeout(pollFft, wait);
       return;
     }
-    sendMessage({ type: 'getFFT' }, onFft);
+    sendMessage({ type: 'getEqFFT' }, onFft);
   }
 
   function onFft(msg) {
@@ -262,11 +262,26 @@
     pollFft();
   }
 
+  function mergeStreams(captureStreams, pageStreams) {
+    const byId = new Map();
+    (captureStreams || []).forEach((tab) => {
+      if (tab && typeof tab.id === 'number') byId.set(tab.id, tab);
+    });
+    (pageStreams || []).forEach((tab) => {
+      if (tab && typeof tab.id === 'number') byId.set(tab.id, tab);
+    });
+    return Array.from(byId.values());
+  }
+
   function applyWorkspace(msg) {
     waitingWorkspace = false;
     if (!eqView) return;
     eqView.setWorkspace(msg.eqFilters || [], msg.gain);
-    renderActiveTabs(msg.streams || []);
+    rawSend({ type: 'getPageEqStreams' }, (res) => {
+      void chrome.runtime.lastError;
+      const streams = mergeStreams(msg.streams || [], (res && res.streams) || []);
+      renderActiveTabs(streams);
+    });
     sendMessage({ type: 'getCurrentTabStatus' });
   }
 
@@ -382,16 +397,18 @@
       }
 
       if (!wantOn) {
-        sendMessage(
-          {
-            type: 'eqTab',
-            on: false,
-            tabId: tab.id,
-            tabUrl: tab.url,
-            reason: 'user',
-          },
-          () => sendMessage({ type: 'getCurrentTabStatus' })
-        );
+        sendMessage({ type: 'stopPageEq', tabId: tab.id }, () => {
+          sendMessage(
+            {
+              type: 'eqTab',
+              on: false,
+              tabId: tab.id,
+              tabUrl: tab.url,
+              reason: 'user',
+            },
+            () => sendMessage({ type: 'getCurrentTabStatus' })
+          );
+        });
         return;
       }
 
@@ -409,46 +426,58 @@
         return;
       }
 
-      // Obtain streamId in the popup (user gesture / activeTab), then attach in offscreen.
-      chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id }, (streamId) => {
-        const err = chrome.runtime.lastError;
-        if (err || !streamId) {
-          // Fallback: offscreen/SW path (host_permissions).
+      const startCaptureFallback = () => {
+        chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id }, (streamId) => {
+          const err = chrome.runtime.lastError;
+          if (err || !streamId) {
+            sendMessage(
+              {
+                type: 'eqTab',
+                on: true,
+                tabId: tab.id,
+                tabUrl: tab.url,
+                reason: 'user',
+              },
+              () => sendMessage({ type: 'getCurrentTabStatus' })
+            );
+            return;
+          }
           sendMessage(
             {
-              type: 'eqTab',
-              on: true,
+              type: 'attachTabCapture',
               tabId: tab.id,
-              tabUrl: tab.url,
+              streamId,
+              tab: {
+                id: tab.id,
+                url: tab.url,
+                title: tab.title,
+                favIconUrl: tab.favIconUrl,
+              },
               reason: 'user',
             },
             () => sendMessage({ type: 'getCurrentTabStatus' })
           );
-          return;
+        });
+      };
+
+      // Prefer in-page media EQ so YouTube / HTML5 fullscreen still works.
+      sendMessage(
+        { type: 'startPageEq', tabId: tab.id, reason: 'user' },
+        (res) => {
+          if (res && res.ok) {
+            sendMessage({ type: 'getCurrentTabStatus' });
+            return;
+          }
+          startCaptureFallback();
         }
-        sendMessage(
-          {
-            type: 'attachTabCapture',
-            tabId: tab.id,
-            streamId,
-            tab: {
-              id: tab.id,
-              url: tab.url,
-              title: tab.title,
-              favIconUrl: tab.favIconUrl,
-            },
-            reason: 'user',
-          },
-          () => sendMessage({ type: 'getCurrentTabStatus' })
-        );
-      });
+      );
     });
 
     if (eqBusyTimer) clearTimeout(eqBusyTimer);
     eqBusyTimer = setTimeout(() => {
       clearEqBusy();
       sendMessage({ type: 'getCurrentTabStatus' });
-    }, 2500);
+    }, 4500);
   }
 
   function bindEqButton() {
@@ -655,13 +684,16 @@
     if (!msg || !msg.type) return;
     switch (msg.type) {
       case 'sendCurrentTabStatus': {
-        const streaming = !!msg.streaming;
-        if (eqDesired !== null && streaming !== eqDesired) {
-          // Ignore stale status while a user toggle is still settling.
-          break;
-        }
-        clearEqBusy();
-        setEqButtonLive(streaming, msg.domainAllowed);
+        rawSend({ type: 'getPageEqActive' }, (res) => {
+          void chrome.runtime.lastError;
+          const streaming = !!msg.streaming || !!(res && res.active);
+          if (eqDesired !== null && streaming !== eqDesired) {
+            // Ignore stale status while a user toggle is still settling.
+            return;
+          }
+          clearEqBusy();
+          setEqButtonLive(streaming, msg.domainAllowed);
+        });
         break;
       }
       case 'sendWorkspaceStatus':

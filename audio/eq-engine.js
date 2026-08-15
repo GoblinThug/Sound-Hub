@@ -892,9 +892,38 @@
         case "exportPresets":
           exportPresets();
           break;
+        case "getEqSnapshot": {
+          var snapFilters = [];
+          for (var si = 0; si < FILTER_COUNT; si++) {
+            var storedSnap = readStoredFilter(si) || {
+              f: DEFAULT_FREQUENCIES[si],
+              g: 0,
+              q: DEFAULT_Q,
+            };
+            snapFilters.push({
+              f: storedSnap.f,
+              g: storedSnap.g,
+              q: storedSnap.q,
+            });
+          }
+          if (sendResponse) {
+            sendResponse({
+              ok: true,
+              filters: snapFilters,
+              gain: readStoredGain(),
+            });
+          }
+          return true;
+        }
         case "getFFT":
-          handleGetFft(sendResponse);
-          break;
+          getActiveTab(function (tab) {
+            if (!tab || !(tab.id in tabStreams)) {
+              if (sendResponse) sendResponse({ type: "fft", fft: null });
+              return;
+            }
+            handleGetFft(sendResponse);
+          });
+          return true;
         default:
           break;
       }
