@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security / Безопасность
+    url: https://github.com/GoblinThug/SoundHub/security/advisories/new
+    about: Report a vulnerability privately. Сообщите об уязвимости приватно (не в публичном Issue).
+  - name: Maintainer / Автор
+    url: https://github.com/GoblinThug
+    about: Contact @GoblinThug on GitHub. Связь с автором через GitHub.

@@ -1,0 +1,45 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+!.vscode/extensions.json
+*.code-workspace
+
+# Logs & caches
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.cache/
+.parcel-cache/
+
+# Dependencies (if added later)
+node_modules/
+
+# Env / secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials/
+secrets/
+
+# Local scratch / packaging leftovers
+_recovered/
+*.crx
+*.zip
+!docs/**/*.zip
+dist/
+release/
+out/
+
+# Agent / local tooling
+.cursor/
+uploads/
+agent-tools/
