@@ -405,11 +405,21 @@ function injectPageEq(tabId) {
   if (!chrome.scripting || !chrome.scripting.executeScript) {
     return Promise.resolve(false);
   }
+  // Main frame only: YouTube's player video lives there. Main-world engine
+  // survives extension reloads so we never re-bind the same <video>.
   return chrome.scripting
     .executeScript({
-      target: { tabId, allFrames: true },
-      files: ['content/page-eq.js'],
+      target: { tabId },
+      world: 'MAIN',
+      files: ['content/page-eq-main.js'],
     })
+    .then(() =>
+      chrome.scripting.executeScript({
+        target: { tabId },
+        world: 'ISOLATED',
+        files: ['content/page-eq.js'],
+      })
+    )
     .then(() => true)
     .catch((err) => {
       console.warn('SoundHub: page EQ inject failed', err);
@@ -423,7 +433,7 @@ function startPageEqInTab(tabId, snapshot) {
   }
   return chrome.scripting
     .executeScript({
-      target: { tabId, allFrames: true },
+      target: { tabId },
       world: 'ISOLATED',
       func: async (state) => {
         const api = globalThis.__soundhubPageEq;
@@ -439,15 +449,8 @@ function startPageEqInTab(tabId, snapshot) {
       args: [snapshot || { filters: [], gain: 1 }],
     })
     .then((results) => {
-      if (!results || !results.length) {
-        return { ok: false, reason: 'no_frames' };
-      }
-      for (const entry of results) {
-        const result = entry && entry.result;
-        if (result && result.ok) return result;
-      }
-      const last = results[results.length - 1];
-      return (last && last.result) || { ok: false, reason: 'no_media' };
+      const result = results && results[0] && results[0].result;
+      return result || { ok: false, reason: 'no_media' };
     })
     .catch((err) => {
       console.warn('SoundHub: page EQ start failed', err);
@@ -462,9 +465,9 @@ function stopPageEqInTab(tabId) {
   }
   return chrome.scripting
     .executeScript({
-      target: { tabId, allFrames: true },
+      target: { tabId },
       world: 'ISOLATED',
-      func: () => {
+      func: async () => {
         const api = globalThis.__soundhubPageEq;
         if (api && typeof api.stop === 'function') return api.stop();
         return { ok: true };
@@ -686,16 +689,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (tab && pageEqByTab.has(tab.id) && chrome.scripting) {
         try {
           const results = await chrome.scripting.executeScript({
-            target: { tabId: tab.id, allFrames: true },
+            target: { tabId: tab.id },
             world: 'ISOLATED',
-            func: () => {
+            func: async () => {
               const api = globalThis.__soundhubPageEq;
-              if (!api || !api.isActive || !api.isActive()) return null;
-              return api.getFft();
+              if (!api || !api.isActiveAsync || !api.getFftAsync) return null;
+              const active = await api.isActiveAsync();
+              if (!active) return null;
+              return api.getFftAsync();
             },
           });
-          const fft = (results || []).map((r) => r && r.result).find((v) => Array.isArray(v));
-          sendResponse({ type: 'fft', fft: fft || null });
+          const fft = results && results[0] && results[0].result;
+          sendResponse({ type: 'fft', fft: Array.isArray(fft) ? fft : null });
         } catch (_) {
           sendResponse({ type: 'fft', fft: null });
         }
