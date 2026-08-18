@@ -18,6 +18,9 @@ const EQ_FORWARD_TYPES = new Set([
   'resetFilter',
 ]);
 const EQ_SNAPSHOT_TYPES = new Set(['preset', 'resetFilters', 'importPresets']);
+const NO_STOP_LOCK_REASONS = new Set(['filter', 'navigation', 'autostart', 'replace']);
+const AUTO_EQ_MAX_RETRIES = 8;
+const autoEqRetries = new Map();
 let stoppedHostsLoaded = false;
 let creatingOffscreen = null;
 let creatingHostWindow = null;
@@ -559,7 +562,47 @@ function tabSnapshot(tab) {
   };
 }
 
-async function startEqForTab(tab) {
+function prefersPageEq(url) {
+  const host = SoundHubDomainFilter.hostnameFromUrl(url);
+  if (!host) return false;
+  return (
+    host === 'youtube.com' ||
+    host.endsWith('.youtube.com') ||
+    host === 'youtu.be' ||
+    host === 'vimeo.com' ||
+    host.endsWith('.vimeo.com') ||
+    host === 'twitch.tv' ||
+    host.endsWith('.twitch.tv') ||
+    host === 'rutube.ru' ||
+    host.endsWith('.rutube.ru') ||
+    host === 'vk.com' ||
+    host.endsWith('.vk.com') ||
+    host === 'ok.ru' ||
+    host.endsWith('.ok.ru') ||
+    host === 'dailymotion.com' ||
+    host.endsWith('.dailymotion.com')
+  );
+}
+
+function disconnectCaptureForTab(tabId, url, reason) {
+  return runtimeSend({
+    type: 'disconnectTab',
+    tab: { id: tabId, url: url || '' },
+    reason: reason || 'navigation',
+  });
+}
+
+async function stopEqOnTab(tabId, tabUrl, reason) {
+  if (pageEqByTab.has(tabId)) {
+    const tab = pageEqByTab.get(tabId) || { id: tabId, url: tabUrl };
+    await stopPageEqInTab(tabId);
+    notifyPageEqStatus(tab, false);
+  }
+  await disconnectCaptureForTab(tabId, tabUrl, reason);
+}
+
+async function startEqForTab(tab, options) {
+  const isAuto = !options || options.auto !== false;
   if (!stoppedHostsLoaded) await loadStoppedHosts();
   if (!tab || typeof tab.id !== 'number') return;
   if (!isBrowsableUrl(tab.url)) return;
@@ -575,7 +618,7 @@ async function startEqForTab(tab) {
     const ok = await ensureAudioHost();
     if (!ok) return;
 
-    await wait(350);
+    await wait(isAuto ? 500 : 350);
 
     const stillActive = await isTabActive(tab.id);
     if (!stillActive) return;
@@ -586,15 +629,34 @@ async function startEqForTab(tab) {
     if (!SoundHubDomainFilter.shouldAutoEnable(freshTab.url, filter)) return;
     if (pageEqByTab.has(freshTab.id)) return;
 
-    // Prefer in-page element EQ so video fullscreen keeps working.
+    // Drop stale tabCapture before attaching page EQ (same tabId after navigation).
+    await disconnectCaptureForTab(freshTab.id, freshTab.url, 'replace');
+
     const pageOk = await tryStartPageEq(freshTab);
-    if (pageOk) return;
+    if (pageOk) {
+      autoEqRetries.delete(freshTab.id);
+      return;
+    }
+
+    // On video sites, keep retrying page EQ during autostart — tabCapture breaks fullscreen.
+    if (isAuto && prefersPageEq(freshTab.url)) {
+      const retries = autoEqRetries.get(freshTab.id) || 0;
+      if (retries < AUTO_EQ_MAX_RETRIES) {
+        autoEqRetries.set(freshTab.id, retries + 1);
+        scheduleAutoEnableEq(freshTab.id, 700 + retries * 350, { auto: true });
+        return;
+      }
+      autoEqRetries.delete(freshTab.id);
+    }
 
     const streamId = await getMediaStreamIdForTab(freshTab.id);
     if (!streamId) {
-      chrome.runtime.sendMessage({ type: 'eqTab', on: true, tabId: freshTab.id, auto: true }, () => {
-        void chrome.runtime.lastError;
-      });
+      chrome.runtime.sendMessage(
+        { type: 'eqTab', on: true, tabId: freshTab.id, auto: true },
+        () => {
+          void chrome.runtime.lastError;
+        }
+      );
       return;
     }
 
@@ -604,11 +666,13 @@ async function startEqForTab(tab) {
         tabId: freshTab.id,
         streamId,
         tab: tabSnapshot(freshTab),
+        replace: true,
       },
       () => {
         void chrome.runtime.lastError;
       }
     );
+    autoEqRetries.delete(freshTab.id);
   } finally {
     autoEqInFlight.delete(tab.id);
   }
@@ -616,14 +680,14 @@ async function startEqForTab(tab) {
 
 const autoEqTimers = new Map();
 
-function scheduleAutoEnableEq(tabId, delayMs) {
+function scheduleAutoEnableEq(tabId, delayMs, options) {
   clearTimeout(autoEqTimers.get(tabId));
   autoEqTimers.set(
     tabId,
     setTimeout(() => {
       autoEqTimers.delete(tabId);
       getTab(tabId).then((tab) => {
-        if (tab && tab.active) startEqForTab(tab);
+        if (tab && tab.active) startEqForTab(tab, options);
       });
     }, delayMs)
   );
@@ -721,9 +785,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ ok: false });
         return;
       }
+      autoEqRetries.delete(tab.id);
       if (message.reason === 'user') {
         clearUserStoppedTab(tab.id);
       }
+      await disconnectCaptureForTab(tab.id, tab.url, 'replace');
       await ensureAudioHost();
       const ok = await tryStartPageEq(tab);
       sendResponse({ ok: !!ok, path: ok ? 'element' : null });
@@ -747,16 +813,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === 'eqTab') {
     if (message.on === false) {
+      autoEqRetries.delete(message.tabId);
       if (typeof message.tabId === 'number' && pageEqByTab.has(message.tabId)) {
-        stopPageEqInTab(message.tabId);
+        const tab = pageEqByTab.get(message.tabId);
+        stopPageEqInTab(message.tabId).then(() => {
+          if (tab) notifyPageEqStatus(tab, false);
+        });
       } else if (typeof message.tabId !== 'number') {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           if (tabs && tabs[0] && pageEqByTab.has(tabs[0].id)) {
-            stopPageEqInTab(tabs[0].id);
+            const tab = pageEqByTab.get(tabs[0].id);
+            stopPageEqInTab(tabs[0].id).then(() => {
+              if (tab) notifyPageEqStatus(tab, false);
+            });
           }
         });
       }
-      if (message.reason !== 'filter') {
+      if (message.reason !== 'filter' && !NO_STOP_LOCK_REASONS.has(message.reason)) {
         if (typeof message.tabId === 'number') {
           markUserStoppedTab(message.tabId, message.tabUrl);
         } else {
@@ -764,6 +837,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
       }
     } else if (message.on === true && message.reason === 'user') {
+      autoEqRetries.delete(message.tabId);
       // Manual start clears the stop-lock for this tab.
       if (typeof message.tabId === 'number') {
         clearUserStoppedTab(message.tabId);
@@ -776,6 +850,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   if (message.type === 'attachTabCapture' && message.reason === 'user') {
     if (typeof message.tabId === 'number') {
+      autoEqRetries.delete(message.tabId);
       clearUserStoppedTab(message.tabId);
     }
   }
@@ -783,7 +858,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (pageEqByTab.has(message.tab.id)) {
       stopPageEqInTab(message.tab.id);
     }
-    if (message.reason !== 'filter') {
+    if (!NO_STOP_LOCK_REASONS.has(message.reason)) {
       markUserStoppedTab(message.tab.id, message.tab.url);
     }
   }
@@ -837,6 +912,7 @@ if (chrome.tabs && chrome.tabs.onRemoved) {
     userStoppedHosts.delete(tabId);
     pageEqByTab.delete(tabId);
     autoEqInFlight.delete(tabId);
+    autoEqRetries.delete(tabId);
     clearTimeout(autoEqTimers.get(tabId));
     autoEqTimers.delete(tabId);
   });
@@ -846,21 +922,23 @@ if (chrome.tabs && chrome.tabs.onUpdated) {
   chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
     if (changeInfo.url) {
       clearStopIfDomainChanged(tabId, changeInfo.url);
-      if (pageEqByTab.has(tabId)) {
-        stopPageEqInTab(tabId);
-      }
-      scheduleAutoEnableEq(tabId, 250);
+      autoEqRetries.delete(tabId);
+      getTab(tabId).then((tab) => {
+        if (!tab) return;
+        stopEqOnTab(tabId, tab.url, 'navigation');
+        scheduleAutoEnableEq(tabId, 400, { auto: true });
+      });
       return;
     }
     if (changeInfo.status === 'complete') {
-      scheduleAutoEnableEq(tabId, 350);
+      scheduleAutoEnableEq(tabId, 400, { auto: true });
     }
   });
 }
 
 if (chrome.tabs && chrome.tabs.onActivated) {
   chrome.tabs.onActivated.addListener((activeInfo) => {
-    scheduleAutoEnableEq(activeInfo.tabId, 200);
+    scheduleAutoEnableEq(activeInfo.tabId, 250, { auto: true });
   });
 }
 

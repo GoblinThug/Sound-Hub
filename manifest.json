@@ -4,7 +4,7 @@
   "name": "SoundHub",
   "short_name": "SoundHub",
   "description": "Параметрический EQ для любой вкладки: пресеты, спектр, автозапуск на сайтах и цветовые темы.",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": "SoundHub",
   "icons": {
     "16": "assets/icons/icon16.png",

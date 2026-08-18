@@ -505,9 +505,11 @@
         eqBusy = true;
         eqDesired = false;
         setEqButtonLive(false);
-        sendMessage({ type: 'eqTab', on: false, reason: 'filter', tabId: tab.id, tabUrl: tab.url }, () => {
-          clearEqBusy();
-          sendMessage({ type: 'getCurrentTabStatus' });
+        sendMessage({ type: 'stopPageEq', tabId: tab.id }, () => {
+          sendMessage({ type: 'eqTab', on: false, reason: 'filter', tabId: tab.id, tabUrl: tab.url }, () => {
+            clearEqBusy();
+            sendMessage({ type: 'getCurrentTabStatus' });
+          });
         });
       }
     });

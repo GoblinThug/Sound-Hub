@@ -699,7 +699,10 @@
 
       switch (msg.type) {
         case "attachTabCapture": {
-          if (msg.tabId in tabStreams) return;
+          if (msg.tabId in tabStreams) {
+            if (!msg.replace) return;
+            teardownTabEntry(msg.tabId);
+          }
           var resolveTab = function (tab) {
             if (isExtensionPage(tab)) return;
             var attach = async function () {
