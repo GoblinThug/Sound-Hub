@@ -8,7 +8,7 @@ SoundHub is a Chrome extension: audio runs locally in the tab and/or offscreen d
 
 Do **not** open a public Issue with exploit details.
 
-Preferred channel: a private [GitHub Security Advisory](https://github.com/GoblinThug/SoundHub/security/advisories/new).
+Preferred channel: a private [GitHub Security Advisory](https://github.com/GoblinThug/Sound-Hub/security/advisories/new).
 
 If that isn’t available, contact the maintainer via GitHub ([@GoblinThug](https://github.com/GoblinThug)) **without** posting a PoC in a public issue.
 
@@ -50,7 +50,7 @@ SoundHub — расширение Chrome: обработка звука идёт
 
 **Не** создавайте публичный Issue с деталями эксплойта.
 
-Предпочтительный способ — [GitHub Security Advisory](https://github.com/GoblinThug/SoundHub/security/advisories/new) (приватный отчёт).
+Предпочтительный способ — [GitHub Security Advisory](https://github.com/GoblinThug/Sound-Hub/security/advisories/new) (приватный отчёт).
 
 Если advisory недоступен, напишите автору через GitHub ([@GoblinThug](https://github.com/GoblinThug)) **без** публикации PoC в открытом issue.
 

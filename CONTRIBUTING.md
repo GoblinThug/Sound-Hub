@@ -6,7 +6,7 @@ Thanks for your interest. Here’s how to get started and submit changes.
 
 ## Getting started
 
-1. Find or open an [Issue](https://github.com/GoblinThug/SoundHub/issues) describing the bug or idea.
+1. Find or open an [Issue](https://github.com/GoblinThug/Sound-Hub/issues) describing the bug or idea.
 2. Fork and branch from `main` (e.g. `fix/eq-fade` or `feat/preset-export`).
 3. Make your changes, test locally in Chrome (Load unpacked), open a Pull Request.
 
@@ -17,7 +17,7 @@ Tiny fixes (typos, README, styling) can skip a separate issue.
 No build step: this is a Chrome extension (Manifest V3).
 
 ```bash
-git clone https://github.com/GoblinThug/SoundHub.git
+git clone https://github.com/GoblinThug/Sound-Hub.git
 cd SoundHub
 ```
 
@@ -46,7 +46,7 @@ To debug the audio engine: DevTools on the offscreen document (via the service w
 
 ## Releases
 
-Version lives in `manifest.json`. After a merge to `main`, [`.github/workflows/release.yml`](.github/workflows/release.yml) packs `SoundHub-X.Y.Z.zip` and publishes a [GitHub Release](https://github.com/GoblinThug/SoundHub/releases) tagged `vX.Y.Z`.
+Version lives in `manifest.json`. After a merge to `main`, [`.github/workflows/release.yml`](.github/workflows/release.yml) packs `SoundHub-X.Y.Z.zip` and publishes a [GitHub Release](https://github.com/GoblinThug/Sound-Hub/releases) tagged `vX.Y.Z`.
 
 To ship a new version: bump `"version"` in the manifest → push to `main` (or push tag `vX.Y.Z`).
 
@@ -75,7 +75,7 @@ By contributing, you agree your work is licensed under [MIT](LICENSE) (Russian t
 
 ## С чего начать
 
-1. Найдите или создайте [Issue](https://github.com/GoblinThug/SoundHub/issues) с описанием бага или идеи.
+1. Найдите или создайте [Issue](https://github.com/GoblinThug/Sound-Hub/issues) с описанием бага или идеи.
 2. Сделайте fork и ветку от `main` (например `fix/eq-fade` или `feat/preset-export`).
 3. Внесите изменения, проверьте локально в Chrome (Load unpacked), откройте Pull Request.
 
@@ -86,7 +86,7 @@ By contributing, you agree your work is licensed under [MIT](LICENSE) (Russian t
 Сборка не нужна: это Chrome-расширение (Manifest V3).
 
 ```bash
-git clone https://github.com/GoblinThug/SoundHub.git
+git clone https://github.com/GoblinThug/Sound-Hub.git
 cd SoundHub
 ```
 
@@ -115,7 +115,7 @@ cd SoundHub
 
 ## Релизы
 
-Версия живёт в `manifest.json`. После мержа в `main` workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) собирает `SoundHub-X.Y.Z.zip` и публикует [GitHub Release](https://github.com/GoblinThug/SoundHub/releases) с тегом `vX.Y.Z`.
+Версия живёт в `manifest.json`. После мержа в `main` workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) собирает `SoundHub-X.Y.Z.zip` и публикует [GitHub Release](https://github.com/GoblinThug/Sound-Hub/releases) с тегом `vX.Y.Z`.
 
 Чтобы выпустить новую версию: поднимите `"version"` в манифесте → push в `main` (или запушьте тег `vX.Y.Z`).
 

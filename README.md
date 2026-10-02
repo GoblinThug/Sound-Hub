@@ -33,7 +33,7 @@ After code changes: **Reload** the extension card, then refresh open pages (F5) 
 
 ## Releases
 
-Packaged builds are published on [GitHub Releases](https://github.com/GoblinThug/SoundHub/releases) as `SoundHub-X.Y.Z.zip`.
+Packaged builds are published on [GitHub Releases](https://github.com/GoblinThug/Sound-Hub/releases) as `SoundHub-X.Y.Z.zip`.
 
 Download → unpack → **Load unpacked**, or install from the zip contents as described above.
 
@@ -125,7 +125,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Please follow the [Code of Conduct](CODE
 
 ## Релизы
 
-Сборки: [GitHub Releases](https://github.com/GoblinThug/SoundHub/releases) (`SoundHub-X.Y.Z.zip`).
+Сборки: [GitHub Releases](https://github.com/GoblinThug/Sound-Hub/releases) (`SoundHub-X.Y.Z.zip`).
 
 Версия задаётся в [`manifest.json`](manifest.json).
 

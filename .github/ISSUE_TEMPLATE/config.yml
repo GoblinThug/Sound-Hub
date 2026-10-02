@@ -1,7 +1,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: Security
-    url: https://github.com/GoblinThug/SoundHub/security/advisories/new
+    url: https://github.com/GoblinThug/Sound-Hub/security/advisories/new
     about: Report a vulnerability privately (do not open a public Issue). / Сообщите об уязвимости приватно.
   - name: Maintainer
     url: https://github.com/GoblinThug
