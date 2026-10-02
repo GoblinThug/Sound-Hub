@@ -33,8 +33,6 @@
         <label for="tab-2" data-i18n="tabGuide">Guide</label>
         <input id="tab-3" type="radio" name="tab-group" />
         <label for="tab-3" data-i18n="tabActive">Active Tabs</label>
-        <input id="tab-4" type="radio" name="tab-group" />
-        <label for="tab-4" data-i18n="tabAutostart">Autostart</label>
         <div id="eqDiv" class="panel panel-eq">
           <div class="eq-stage">
             <div class="gain-column">
@@ -47,28 +45,6 @@
         <div id="guideDiv" class="panel panel-guide prose" data-i18n-html="guideHtml"></div>
         <div id="tabsDiv" class="panel panel-tabs">
           <div id="eqTabList"></div>
-        </div>
-        <div id="domainsDiv" class="panel panel-domains">
-          <p class="domains-lead" data-i18n="domainsLead">
-            Choose how EQ starts. You can always turn it on with the button; autostart follows the mode below.
-          </p>
-          <div id="domainsCurrentTab" class="domains-current is-muted">Current tab: …</div>
-          <div id="domainsModePicker" class="domains-mode" role="radiogroup" data-i18n-aria="domainsModeAria" aria-label="EQ autostart mode"></div>
-          <div id="domainsListBlock" class="domains-list-block" hidden>
-            <div class="domains-add">
-              <input
-                id="domainInput"
-                type="text"
-                placeholder="youtube.com"
-                spellcheck="false"
-                autocomplete="off"
-                data-i18n-aria="domainInputAria"
-                aria-label="Domain for the list"
-              />
-              <button id="domainAddButton" type="button" class="btn" data-i18n="domainAdd">Add</button>
-            </div>
-            <ul id="domainList" class="domain-list" data-i18n-aria="domainListAria" aria-label="Domain list"></ul>
-          </div>
         </div>
       </div>
     </section>
@@ -233,11 +209,9 @@
   </div>
   </div>
   <div id="requiresProDiv" hidden></div>
-  <script src="../shared/domain-filter.js"></script>
   <script src="js/i18n.js"></script>
   <script src="js/themes.js"></script>
   <script src="js/eq-canvas.js"></script>
-  <script src="js/domains.js"></script>
   <script src="js/preset-import.js"></script>
   <script src="js/app.js"></script>
 </body>

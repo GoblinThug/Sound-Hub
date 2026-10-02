@@ -849,19 +849,6 @@
           disconnectTab(msg.tab);
           break;
         case "syncDomainFilter":
-          if (window.SoundHubDomainFilter) {
-            Object.keys(tabStreams).forEach(function (id) {
-              var tab = tabStreams[id].tab;
-              if (
-                !window.SoundHubDomainFilter.shouldAutoEnable(
-                  tab && tab.url,
-                  msg.filter,
-                )
-              ) {
-                disconnectTab(tab);
-              }
-            });
-          }
           fullRefresh();
           break;
         case "resetFilters":
@@ -895,6 +882,16 @@
         case "exportPresets":
           exportPresets();
           break;
+        case "getTabCaptureStatus": {
+          var captureTabId = msg.tabId;
+          if (sendResponse) {
+            sendResponse({
+              streaming:
+                typeof captureTabId === "number" && captureTabId in tabStreams,
+            });
+          }
+          return true;
+        }
         case "getEqSnapshot": {
           var snapFilters = [];
           for (var si = 0; si < FILTER_COUNT; si++) {

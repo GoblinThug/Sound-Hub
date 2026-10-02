@@ -55,6 +55,7 @@ jobs:
           for path in \
             manifest.json \
             background \
+            content \
             offscreen \
             audio \
             shared \
@@ -63,6 +64,9 @@ jobs:
             LICENSE \
             LICENSE.ru \
             README.md \
+            CONTRIBUTING.md \
+            SECURITY.md \
+            CODE_OF_CONDUCT.md \
             docs
           do
             if [[ -e "${path}" ]]; then

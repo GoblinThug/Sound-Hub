@@ -1,10 +1,8 @@
 /**
- * Domain auto-enable settings for SoundHub.
- * Modes control when EQ starts automatically — manual EQ stays available everywhere.
+ * Domain helpers for SoundHub (hostname parsing; manual EQ only).
  */
 (function (global) {
   const STORAGE_KEY = 'DOMAIN_FILTER';
-  const MODES = ['manual', 'auto_all', 'auto_list'];
   const DEFAULT_FILTER = { mode: 'manual', domains: [] };
 
   function normalizeDomain(input) {
@@ -36,10 +34,8 @@
   }
 
   function migrateMode(mode) {
-    if (MODES.includes(mode)) return mode;
-    // Legacy: whitelist / all / blacklist → new auto modes
-    if (mode === 'whitelist') return 'auto_list';
-    if (mode === 'all' || mode === 'blacklist') return 'manual';
+    // Autostart removed — legacy auto modes map to manual.
+    if (mode === 'manual') return 'manual';
     return 'manual';
   }
 
@@ -54,12 +50,11 @@
     return { mode, domains };
   }
 
-  /** Manual EQ is always allowed; modes only control auto-start. */
-  function isAllowedForHostname(hostname, filter) {
+  function isAllowedForHostname(_hostname, _filter) {
     return true;
   }
 
-  function isAllowedForUrl(url, filter) {
+  function isAllowedForUrl(_url, _filter) {
     return true;
   }
 
@@ -88,7 +83,7 @@
     if (cb) cb(sanitized);
   }
 
-  function checkTabAllowed(tab, cb) {
+  function checkTabAllowed(_tab, cb) {
     cb(true);
   }
 
@@ -100,18 +95,14 @@
     return cfg.domains.some((d) => domainMatches(host, d));
   }
 
-  function shouldAutoEnable(url, filter) {
-    const cfg = sanitizeFilter(filter);
-    if (cfg.mode === 'manual') return false;
-    if (cfg.mode === 'auto_all') return true;
-    if (cfg.mode === 'auto_list') return isListedDomain(url, cfg);
+  /** Autostart removed — always false. */
+  function shouldAutoEnable(_url, _filter) {
     return false;
   }
 
   global.SoundHubDomainFilter = {
     STORAGE_KEY,
     DEFAULT_FILTER,
-    MODES,
     normalizeDomain,
     hostnameFromUrl,
     domainMatches,

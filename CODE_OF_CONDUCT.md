@@ -1,6 +1,30 @@
 # Code of Conduct
 
-Русский · [English](#-english)
+**English** · [Русский](#-русский)
+
+## Our pledge
+
+We aim to keep participation in SoundHub open and respectful for everyone.
+
+## Expected behavior
+
+- Respectful communication in Issues and Pull Requests
+- Constructive critique of code and ideas, without personal attacks
+- Awareness that contributors have different experience levels
+
+## Unacceptable behavior
+
+- Insults, harassment, or discrimination
+- Publishing others’ private information without consent
+- Trolling or deliberately disrupting discussion
+
+## Enforcement
+
+Report issues to the maintainer via GitHub ([@GoblinThug](https://github.com/GoblinThug)). Include links and context when possible.
+
+We may warn, close a discussion, or restrict participation depending on severity.
+
+This code is inspired by the [Contributor Covenant](https://www.contributor-covenant.org/).
 
 ---
 
@@ -29,31 +53,3 @@
 Мы можем предупредить, закрыть обсуждение или ограничить участие — в зависимости от серьёзности.
 
 Этот кодекс вдохновлён [Contributor Covenant](https://www.contributor-covenant.org/).
-
----
-
-# 🇬🇧 English
-
-## Our pledge
-
-We aim to keep participation in SoundHub open and respectful for everyone.
-
-## Expected behavior
-
-- Respectful communication in Issues and Pull Requests
-- Constructive critique of code and ideas, without personal attacks
-- Awareness that contributors have different experience levels
-
-## Unacceptable behavior
-
-- Insults, harassment, or discrimination
-- Publishing others’ private information without consent
-- Trolling or deliberately disrupting discussion
-
-## Enforcement
-
-Report issues to the maintainer via GitHub ([@GoblinThug](https://github.com/GoblinThug)). Include links and context when possible.
-
-We may warn, close a discussion, or restrict participation depending on severity.
-
-This code is inspired by the [Contributor Covenant](https://www.contributor-covenant.org/).

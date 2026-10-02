@@ -1,6 +1,6 @@
 ## Summary
 
-<!-- What changed and why (1–3 bullets). Что изменилось и зачем. -->
+<!-- What changed and why (1–3 bullets). -->
 
 -
 
@@ -8,7 +8,8 @@
 
 - [ ] Loaded unpacked in Chrome and reloaded the extension
 - [ ] Popup opens; EQ start/stop works on a normal https tab
+- [ ] YouTube / HTML5 video fullscreen still works when using page EQ (if relevant)
 - [ ] Presets / themes / language still work (if touched)
-- [ ] No new console errors in popup / service worker
+- [ ] No new console errors in popup / service worker / content scripts
 
-<!-- RU: проверьте Load unpacked, старт/стоп EQ, затронутые настройки, консоль. -->
+<!-- RU (optional): Load unpacked, старт/стоп EQ, fullscreen на видео, затронутые настройки, консоль. -->

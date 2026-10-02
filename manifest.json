@@ -3,8 +3,8 @@
 
   "name": "SoundHub",
   "short_name": "SoundHub",
-  "description": "Параметрический EQ для любой вкладки: пресеты, спектр, автозапуск на сайтах и цветовые темы.",
-  "version": "1.2.2",
+  "description": "Parametric EQ for any browser tab: presets, spectrum visualizer, color themes, and bilingual UI.",
+  "version": "1.3.2",
   "author": "SoundHub",
   "icons": {
     "16": "assets/icons/icon16.png",
@@ -28,6 +28,19 @@
     "scripting"
   ],
   "host_permissions": ["http://*/*", "https://*/*"],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content/page-eq-main.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content/page-eq.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "background": {
     "service_worker": "background/service-worker.js"
   },

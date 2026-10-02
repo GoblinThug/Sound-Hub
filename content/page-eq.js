@@ -42,8 +42,14 @@
     });
   }
 
-  function start(snapshot) {
-    return callMain('start', [snapshot || { filters: [], gain: 1 }]);
+  function start(snapshot, options) {
+    return callMain('start', [snapshot || { filters: [], gain: 1 }, options || {}]);
+  }
+
+  function probeMedia() {
+    return callMain('probeMedia').then(function (v) {
+      return !!v;
+    });
   }
 
   function stop() {
@@ -105,6 +111,16 @@
   chrome.runtime.onMessage.addListener(function (msg, _sender, sendResponse) {
     if (!msg || !msg.type) return;
     switch (msg.type) {
+      case 'pageEq.start':
+        start(msg.snapshot || { filters: [], gain: 1 }, msg.options || {}).then(function (res) {
+          sendResponse(res || { ok: false });
+        });
+        return true;
+      case 'pageEq.probe':
+        probeMedia().then(function (hasMedia) {
+          sendResponse({ hasMedia: !!hasMedia });
+        });
+        return true;
       case 'pageEq.ping':
         isActive().then(function (active) {
           sendResponse({ ready: true, active: active });
@@ -147,4 +163,5 @@
         break;
     }
   });
+
 })();

@@ -20,7 +20,6 @@
       tabControls: 'Controls',
       tabGuide: 'Guide',
       tabActive: 'Active Tabs',
-      tabAutostart: 'Autostart',
       workspaceAria: 'Main workspace',
       masterVolume: 'Master volume',
       equalizer: 'Equalizer',
@@ -46,28 +45,6 @@
       savedPresets: 'Saved presets',
       stopEqTab: 'Stop EQ',
       noActiveTabs: "No tabs active. Click 'EQ This Tab' above to activate this tab.",
-      domainsLead:
-        'Choose how EQ starts. You can always turn it on with the button; autostart follows the mode below.',
-      domainsModeAria: 'EQ autostart mode',
-      domainInputAria: 'Domain for the list',
-      domainAdd: 'Add',
-      domainListAria: 'Domain list',
-      domainListEmpty: 'List is empty. Add a domain, e.g. youtube.com',
-      domainRemove: 'Remove domain',
-      domainRemoveNamed: 'Remove {name}',
-      currentTabUnavailable: 'Current tab: unavailable',
-      currentTabLine: 'Current tab: {host} — {status}',
-      statusManualOnly: 'manual only',
-      statusAutostart: 'autostart',
-      statusInList: 'in list',
-      statusNotInList: 'not in list — manual',
-      statusManual: 'manual',
-      modeManual: 'Manual',
-      modeManualHint: 'EQ turns on only with the button',
-      modeAutoAll: 'Auto on all sites',
-      modeAutoAllHint: 'EQ starts automatically on any site',
-      modeAutoList: 'Auto from list',
-      modeAutoListHint: 'EQ starts automatically only on domains below',
       guideHtml: `
 <p><strong>SoundHub</strong> equalizes audio from any browser tab in real time.</p>
 
@@ -90,15 +67,6 @@
 <h3>Presets</h3>
 <p>Type a name and press <strong>Save</strong> (or Enter). Click a chip to apply a preset. <strong>Bass Boost</strong> is a built-in curve. Export / Import work with SoundHub/Ears JSON and Airs-style configs (<code>nodeGainValues</code> / <code>nodeFrequencyValues</code>).</p>
 
-<h3>Autostart</h3>
-<p>On the <strong>Autostart</strong> tab you choose how EQ turns on:</p>
-<ul>
-<li><strong>Manual</strong> — only with the button</li>
-<li><strong>Auto on all sites</strong> — starts when you open any site</li>
-<li><strong>Auto from list</strong> — only for domains you add (e.g. youtube.com)</li>
-</ul>
-<p>You can always stop EQ manually. After a stop on a site, it stays off there until you leave that domain (or start it again yourself).</p>
-
 <h3>Settings</h3>
 <p>Open the gear icon for visualizer toggle, color themes, language (English / Russian), and a link to this guide. Fullscreen opens the mixer in a larger window.</p>
 `,
@@ -114,7 +82,6 @@
       tabControls: 'Эквалайзер',
       tabGuide: 'Справка',
       tabActive: 'Вкладки',
-      tabAutostart: 'Автозапуск',
       workspaceAria: 'Рабочая область',
       masterVolume: 'Громкость',
       equalizer: 'Эквалайзер',
@@ -140,28 +107,6 @@
       savedPresets: 'Сохранённые пресеты',
       stopEqTab: 'Стоп EQ',
       noActiveTabs: 'Нет активных вкладок. Нажмите «EQ вкладки» выше.',
-      domainsLead:
-        'Выберите, как включать EQ. Кнопкой можно включить всегда; автозапуск — по выбранному режиму.',
-      domainsModeAria: 'Режим автозапуска EQ',
-      domainInputAria: 'Домен для списка',
-      domainAdd: 'Добавить',
-      domainListAria: 'Список доменов',
-      domainListEmpty: 'Список пуст. Добавьте домен, например youtube.com',
-      domainRemove: 'Удалить домен',
-      domainRemoveNamed: 'Удалить {name}',
-      currentTabUnavailable: 'Текущая вкладка: недоступна',
-      currentTabLine: 'Текущая вкладка: {host} — {status}',
-      statusManualOnly: 'только вручную',
-      statusAutostart: 'автозапуск',
-      statusInList: 'в списке',
-      statusNotInList: 'не в списке — вручную',
-      statusManual: 'вручную',
-      modeManual: 'Вручную',
-      modeManualHint: 'EQ включается только кнопкой',
-      modeAutoAll: 'Авто на всех',
-      modeAutoAllHint: 'EQ сам включается на любом сайте',
-      modeAutoList: 'Авто из списка',
-      modeAutoListHint: 'EQ сам включается только на доменах ниже',
       guideHtml: `
 <p><strong>SoundHub</strong> — эквалайзер для звука любой вкладки браузера в реальном времени.</p>
 
@@ -183,15 +128,6 @@
 
 <h3>Пресеты</h3>
 <p>Введите имя и нажмите <strong>Сохранить</strong> (или Enter). Клик по чипу применяет пресет. <strong>Bass Boost</strong> — встроенная кривая. Экспорт / импорт поддерживают JSON SoundHub/Ears и конфиги Airs (<code>nodeGainValues</code> / <code>nodeFrequencyValues</code>).</p>
-
-<h3>Автозапуск</h3>
-<p>Во вкладке <strong>Автозапуск</strong> выберите, как включать EQ:</p>
-<ul>
-<li><strong>Вручную</strong> — только кнопкой</li>
-<li><strong>Авто на всех</strong> — сам включается на любом сайте</li>
-<li><strong>Авто из списка</strong> — только на добавленных доменах (например youtube.com)</li>
-</ul>
-<p>В любой момент EQ можно остановить вручную. После стопа на сайте он не включится снова, пока вы не уйдёте с этого домена (или не запустите сами).</p>
 
 <h3>Настройки</h3>
 <p>В шестерёнке: визуалайзер, цветовые темы, язык (English / Русский) и переход к этой справке. Кнопка полноэкранного режима открывает микшер в большом окне.</p>

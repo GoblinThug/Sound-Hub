@@ -1,10 +1,10 @@
-# SoundHub
+# SoundHub (Русский)
 
 Параметрический EQ для любой вкладки браузера (Chrome Manifest V3).
 
-Пресеты, спектр, автозапуск, темы, русский и английский интерфейс.
+Пресеты, спектр, темы, русский и английский интерфейс. EQ включается **вручную** кнопкой в popup (автозапуска по сайтам нет).
 
-Полная двуязычная документация, лицензия и гайды — в корне репозитория: [README.md](../README.md).
+Полная документация: [README.md](../README.md).
 
 ## Установка
 
@@ -19,6 +19,9 @@
 SoundHub/
 ├── manifest.json
 ├── background/service-worker.js
+├── content/
+│   ├── page-eq-main.js
+│   └── page-eq.js
 ├── offscreen/
 │   ├── offscreen.html
 │   └── mv3-bridge.js
@@ -31,7 +34,6 @@ SoundHub/
 │       ├── app.js
 │       ├── i18n.js
 │       ├── themes.js
-│       ├── domains.js
 │       ├── eq-canvas.js
 │       └── preset-import.js
 ├── assets/icons/icon*.png
@@ -40,7 +42,8 @@ SoundHub/
 
 ## Примечания
 
-- Обработка звука идёт в offscreen-документе.
-- Service worker отвечает за вкладки, автозапуск и bridge к Chrome API.
+- Page EQ работает в main world страницы (fullscreen на плеерах).
+- Tab capture и граф EQ — в offscreen-документе.
+- Service worker управляет вкладками и bridge к Chrome API.
 - Уязвимости: [SECURITY.md](../SECURITY.md) (не в публичных Issues).
 - Лицензия: [MIT](../LICENSE)

@@ -282,7 +282,11 @@
       const streams = mergeStreams(msg.streams || [], (res && res.streams) || []);
       renderActiveTabs(streams);
     });
-    sendMessage({ type: 'getCurrentTabStatus' });
+    sendMessage({ type: 'getCurrentTabEqStatus' }, (res) => {
+      if (res && typeof res.streaming === 'boolean') {
+        setEqButtonLive(res.streaming, res.domainAllowed);
+      }
+    });
   }
 
   function renderActiveTabs(streams) {
@@ -477,7 +481,7 @@
     eqBusyTimer = setTimeout(() => {
       clearEqBusy();
       sendMessage({ type: 'getCurrentTabStatus' });
-    }, 4500);
+    }, 2500);
   }
 
   function bindEqButton() {
@@ -487,31 +491,6 @@
     btn.addEventListener('click', () => {
       if (eqBusy || btn.disabled) return;
       beginEqToggle(!eqStreaming);
-    });
-  }
-
-  function refreshDomainEqState() {
-    sendMessage({ type: 'getCurrentTabStatus' });
-    window.SoundHubDomains?.refreshCurrentTab?.();
-  }
-
-  function syncMixerWithDomainFilter(filter) {
-    if (!filter || !window.SoundHubDomainFilter) return;
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const tab = tabs && tabs[0];
-      if (!tab) return;
-      const keep = window.SoundHubDomainFilter.shouldAutoEnable(tab.url, filter);
-      if (!keep && eqStreaming) {
-        eqBusy = true;
-        eqDesired = false;
-        setEqButtonLive(false);
-        sendMessage({ type: 'stopPageEq', tabId: tab.id }, () => {
-          sendMessage({ type: 'eqTab', on: false, reason: 'filter', tabId: tab.id, tabUrl: tab.url }, () => {
-            clearEqBusy();
-            sendMessage({ type: 'getCurrentTabStatus' });
-          });
-        });
-      }
     });
   }
 
@@ -655,14 +634,16 @@
       toggleVisualizer();
     });
 
-    ['tab-1', 'tab-2', 'tab-3', 'tab-4'].forEach((id) => {
-      document.getElementById(id).addEventListener('change', function onTab() {
+    ['tab-1', 'tab-2', 'tab-3'].forEach((id) => {
+      const tabInput = document.getElementById(id);
+      if (!tabInput) return;
+      tabInput.addEventListener('change', function onTab() {
         if (this.checked) localStorage[LAST_TAB_KEY] = id;
       });
     });
 
     const lastTab = localStorage[LAST_TAB_KEY];
-    if (lastTab) {
+    if (lastTab && lastTab !== 'tab-4') {
       const el = document.getElementById(lastTab);
       if (el) el.checked = true;
     }
@@ -686,15 +667,15 @@
     if (!msg || !msg.type) return;
     switch (msg.type) {
       case 'sendCurrentTabStatus': {
-        rawSend({ type: 'getPageEqActive' }, (res) => {
+        rawSend({ type: 'getCurrentTabEqStatus' }, (res) => {
           void chrome.runtime.lastError;
-          const streaming = !!msg.streaming || !!(res && res.active);
+          const streaming = !!(res && res.streaming) || !!msg.streaming;
           if (eqDesired !== null && streaming !== eqDesired) {
             // Ignore stale status while a user toggle is still settling.
             return;
           }
           clearEqBusy();
-          setEqButtonLive(streaming, msg.domainAllowed);
+          setEqButtonLive(streaming, res && res.domainAllowed != null ? res.domainAllowed : msg.domainAllowed);
         });
         break;
       }
@@ -720,8 +701,11 @@
     setEqButtonLive(false);
     sendMessage({ type: 'onPopupOpen' });
     requestRefresh();
-    sendMessage({ type: 'getCurrentTabStatus' });
-    sendMessage({ type: 'tryAutoEq' });
+    sendMessage({ type: 'getCurrentTabEqStatus' }, (res) => {
+      if (res && res.streaming) {
+        setEqButtonLive(true, res.domainAllowed);
+      }
+    });
 
     document.addEventListener('soundhub-theme-change', () => {
       if (eqView) eqView.render();
@@ -730,12 +714,6 @@
     document.addEventListener('soundhub-lang-change', () => {
       setEqButtonLive(eqStreaming);
       sendMessage({ type: 'getFullRefresh' });
-      window.SoundHubDomains?.refreshCurrentTab?.();
-    });
-
-    document.addEventListener('soundhub-domains-change', (e) => {
-      syncMixerWithDomainFilter(e.detail);
-      refreshDomainEqState();
     });
 
     const presetScroller = document.querySelector('.preset-scroll');

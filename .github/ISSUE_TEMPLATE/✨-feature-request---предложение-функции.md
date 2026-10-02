@@ -1,32 +1,29 @@
 ---
-name: "✨ Feature Request / Предложение функции"
-about: Suggest an improvement or new feature for SoundHub. Предложите улучшение или новую функцию для SoundHub.
+name: "✨ Feature Request"
+about: Suggest an improvement or new feature for SoundHub. / Предложите улучшение или новую функцию.
 title: "[FEATURE]"
 labels: enhancement
 assignees: ''
 ---
 
-## Problem / Проблема
+## Problem
 
 What problem would this feature solve?
-Какую проблему решит эта функция?
 
-## Proposed solution / Предлагаемое решение
+<!-- RU: какую проблему решит эта функция? -->
+
+## Proposed solution
 
 Describe the feature you would like to see.
-Опишите функцию, которую вы хотели бы видеть.
 
-## Use case / Сценарий использования
+## Use case
 
 How would you use this feature?
-Как вы будете использовать эту функцию?
 
-## Alternatives / Альтернативы
+## Alternatives
 
 What alternatives or workarounds have you considered?
-Какие альтернативы или обходные решения вы рассматривали?
 
-## Additional context / Дополнительная информация
+## Additional context
 
 Add any other information, examples, screenshots, or references.
-Добавьте дополнительную информацию, примеры, скриншоты или ссылки.

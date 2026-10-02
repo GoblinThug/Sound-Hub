@@ -1,48 +1,47 @@
 ---
-name: "🐛 Bug Report / Ошибка"
-about: Report a reproducible problem with SoundHub. Сообщите о воспроизводимой проблеме в SoundHub.
+name: "🐛 Bug Report"
+about: Report a reproducible problem with SoundHub. / Сообщите о воспроизводимой проблеме.
 title: "[BUG]"
 labels: bug
 assignees: ''
 ---
 
-## SoundHub version / Версия SoundHub
+## SoundHub version
 
 <!-- manifest.json → "version" -->
 
-## Browser / Браузер
+## Browser
 
 <!-- Chrome / Edge + version -->
 
-## Operating system / Операционная система
+## Operating system
 
- 
 
-## Description / Описание
+
+## Description
 
 Describe the problem clearly.
-Опишите проблему как можно подробнее.
 
-## Steps to reproduce / Шаги для воспроизведения
+<!-- RU: опишите проблему как можно подробнее. -->
+
+## Steps to reproduce
 
 1.
 2.
 3.
 
-## Expected behavior / Ожидаемое поведение
+## Expected behavior
 
 What did you expect to happen?
-Что должно было произойти?
 
-## Actual behavior / Фактическое поведение
+## Actual behavior
 
 What happened instead?
-Что произошло вместо этого?
 
-## Console / Логи
+## Console
 
-<!-- popup DevTools or service worker console, if useful -->
+<!-- popup DevTools, service worker, or page console — if useful -->
 
-## Screenshots / Скриншоты
+## Screenshots
 
- 
+

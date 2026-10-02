@@ -18,7 +18,7 @@
   var AUDIO_SMOOTH_TC = 0.085;
   var AUDIO_FAST_TC = 0.04;
   var HOOK_TIMEOUT_MS = 4500;
-  var HOOK_POLL_MS = 200;
+  var HOOK_POLL_MS = 100;
 
   var ctx = null;
   var preGain = null;
@@ -320,6 +320,15 @@
         subtree: true,
       });
     } catch (err) {}
+    document.addEventListener(
+      'play',
+      function () {
+        if (!active) return;
+        if (hookedEl && hookedEl.isConnected) return;
+        tryHookOnce();
+      },
+      true
+    );
   }
 
   function tryHookOnce() {
@@ -358,6 +367,14 @@
         subtree: true,
       });
     } catch (err) {}
+    document.addEventListener(
+      'play',
+      function () {
+        if (settled || (!active && !starting)) return;
+        if (tryHookOnce()) done(true, 'hooked');
+      },
+      true
+    );
     var tick = function () {
       if (settled || (!starting && !active)) return;
       if (tryHookOnce()) {
@@ -373,7 +390,13 @@
     tick();
   }
 
-  function start(snapshot) {
+  function probeMedia() {
+    return !!findBestMedia();
+  }
+
+  function start(snapshot, options) {
+    options = options || {};
+    var hookTimeout = options.fast ? 800 : HOOK_TIMEOUT_MS;
     if (active && hookedEl && source) {
       connectThroughEq();
       applySnapshot(snapshot);
@@ -401,7 +424,7 @@
       starting = false;
       return Promise.resolve(finishStart(true, 'hooked'));
     }
-    startDeadline = Date.now() + HOOK_TIMEOUT_MS;
+    startDeadline = Date.now() + hookTimeout;
     return new Promise(function (resolve) {
       scheduleHookAttempts(resolve);
     });
@@ -475,7 +498,8 @@
     var args = detail.args || [];
     var result;
     try {
-      if (method === 'start') result = start(args[0]);
+      if (method === 'start') result = start(args[0], args[1]);
+      else if (method === 'probeMedia') result = probeMedia();
       else if (method === 'stop') result = stop();
       else if (method === 'applySnapshot') {
         applySnapshot(args[0]);
@@ -526,5 +550,6 @@
     resetFilters: resetFilters,
     getFft: getFft,
     isActive: isActive,
+    probeMedia: probeMedia,
   };
 })();
