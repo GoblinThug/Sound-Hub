@@ -1,6 +1,6 @@
 # Ears Audio Toolkit (Manifest V3)
 
-Неофициальный порт [Ears Audio Toolkit MV3](https://github.com/Ivanich69/Ears-Audio-Toolkit-with-manifest-3) — функционально идентичен оригиналу, исходники разложены по папкам.
+Неофициальный порт [Ears Audio Toolkit MV3](https://github.com/Ivanich69/Ears-Audio-Toolkit-with-manifest-3) — функционально идентичен оригиналу, исходники разложены по папкам. 
 
 ## Структура
 
